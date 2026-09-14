@@ -19,6 +19,9 @@ class Trip extends Model
         'start_address',
         'end_address',
         'route',
+        'fuel_used_liters',
+        'avg_fuel_consumption_l100km',
+        'eco_score',
     ];
 
     protected $casts = [
@@ -30,6 +33,9 @@ class Trip extends Model
         'avg_coolant_temp_c' => 'float',
         'max_coolant_temp_c' => 'float',
         'distance_km' => 'float',
+        'fuel_used_liters' => 'float',
+        'avg_fuel_consumption_l100km' => 'float',
+        'eco_score' => 'integer',
     ];
 
     public function vehicle(): BelongsTo

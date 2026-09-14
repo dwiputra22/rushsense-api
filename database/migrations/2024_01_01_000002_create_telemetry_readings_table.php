@@ -21,7 +21,6 @@ return new class extends Migration
             $table->timestamp('recorded_at');
             $table->timestamps();
 
-            // Query paling umum: "riwayat telemetry kendaraan X, urut waktu"
             $table->index(['vehicle_id', 'recorded_at']);
         });
     }

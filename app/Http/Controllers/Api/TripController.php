@@ -23,6 +23,9 @@ class TripController extends Controller
             'route' => 'nullable|array',
             'route.*.lat' => 'required_with:route|numeric',
             'route.*.lng' => 'required_with:route|numeric',
+            'fuel_used_liters' => 'nullable|numeric|min:0',
+            'avg_fuel_consumption_l100km' => 'nullable|numeric|min:0',
+            'eco_score' => 'nullable|integer|min:0|max:100',
         ]);
 
         $trip = $vehicle->trips()->create($data);
