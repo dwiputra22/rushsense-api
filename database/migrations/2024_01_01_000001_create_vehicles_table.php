@@ -15,7 +15,6 @@ return new class extends Migration
             $table->unsignedSmallInteger('year')->nullable();
             $table->string('nickname')->nullable();
             $table->string('engine_name')->nullable();
-            $table->string('vin')->nullable();
             $table->timestamps();
         });
     }

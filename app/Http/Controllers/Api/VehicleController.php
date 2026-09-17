@@ -16,12 +16,21 @@ class VehicleController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'vin' => 'nullable|string|size:17',
             'brand' => 'required|string|max:100',
             'model' => 'required|string|max:100',
             'year' => 'nullable|integer|min:1950|max:' . (date('Y') + 1),
             'nickname' => 'nullable|string|max:100',
             'engine_name' => 'nullable|string|max:100',
         ]);
+
+        if (!empty($data['vin'])) {
+            $vehicle = Vehicle::updateOrCreate(
+                ['vin' => $data['vin']],
+                $data,
+            );
+            return response()->json($vehicle, $vehicle->wasRecentlyCreated ? 201 : 200);
+        }
 
         $vehicle = Vehicle::create($data);
 
@@ -36,6 +45,7 @@ class VehicleController extends Controller
     public function update(Request $request, Vehicle $vehicle)
     {
         $data = $request->validate([
+            'vin' => 'nullable|string|size:17|unique:vehicles,vin,' . $vehicle->id,
             'brand' => 'sometimes|string|max:100',
             'model' => 'sometimes|string|max:100',
             'year' => 'nullable|integer|min:1950|max:' . (date('Y') + 1),
