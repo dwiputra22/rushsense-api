@@ -26,6 +26,11 @@ class TripController extends Controller
             'fuel_used_liters' => 'nullable|numeric|min:0',
             'avg_fuel_consumption_l100km' => 'nullable|numeric|min:0',
             'eco_score' => 'nullable|integer|min:0|max:100',
+            'health_events' => 'nullable|array',
+            'health_events.*.lat' => 'required_with:health_events|numeric',
+            'health_events.*.lng' => 'required_with:health_events|numeric',
+            'health_events.*.sensor_label' => 'required_with:health_events|string',
+            'health_events.*.severity' => 'required_with:health_events|string',
         ]);
 
         $trip = $vehicle->trips()->create($data);
@@ -38,7 +43,7 @@ class TripController extends Controller
         return $vehicle->trips()
             ->orderByDesc('started_at')
             ->get()
-            ->makeHidden('route');
+            ->makeHidden(['route', 'health_events']);
     }
 
     public function show(Vehicle $vehicle, $tripId)

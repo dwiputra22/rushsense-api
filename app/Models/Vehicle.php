@@ -26,4 +26,9 @@ class Vehicle extends Model
     {
         return $this->hasMany(MaintenanceRecord::class);
     }
+
+    public function aiDiagnoses(): HasMany
+    {
+        return $this->hasMany(AiDiagnosis::class);
+    }
 }

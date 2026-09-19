@@ -39,4 +39,8 @@ return [
         'api_key' => env('DEVICE_API_KEY'),
     ],
 
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+    ],
+
 ];

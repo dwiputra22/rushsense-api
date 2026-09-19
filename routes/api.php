@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AiMechanicController;
 use App\Http\Controllers\Api\MaintenanceController;
 use App\Http\Controllers\Api\TelemetryController;
 use App\Http\Controllers\Api\TripController;
@@ -22,4 +23,7 @@ Route::middleware('device.key')->group(function () {
 
     Route::post('/vehicles/{vehicle}/maintenance', [MaintenanceController::class, 'store']);
     Route::get('/vehicles/{vehicle}/maintenance', [MaintenanceController::class, 'index']);
+
+    Route::post('/vehicles/{vehicle}/ai-mechanic', [AiMechanicController::class, 'analyze']);
+    Route::get('/vehicles/{vehicle}/ai-mechanic', [AiMechanicController::class, 'history']);
 });
