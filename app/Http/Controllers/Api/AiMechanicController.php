@@ -24,6 +24,13 @@ class AiMechanicController extends Controller
             'health_score' => 'nullable|integer|min:0|max:100',
             'recent_avg_fuel_consumption' => 'nullable|numeric',
             'recent_eco_score' => 'nullable|integer',
+            'drift_signals' => 'nullable|array',
+            'drift_signals.*.sensor_label' => 'required_with:drift_signals|string',
+            'drift_signals.*.state_label' => 'required_with:drift_signals|string',
+            'drift_signals.*.old_mean' => 'required_with:drift_signals|numeric',
+            'drift_signals.*.new_mean' => 'required_with:drift_signals|numeric',
+            'drift_signals.*.change_percent' => 'required_with:drift_signals|numeric',
+            'drift_signals.*.direction' => 'required_with:drift_signals|string',
         ]);
 
         $apiKey = config('services.anthropic.api_key');
@@ -104,6 +111,16 @@ class AiMechanicController extends Controller
 
         $healthScore = $context['health_score'] ?? 'tidak diketahui';
 
+        $driftLines = [];
+        foreach ($context['drift_signals'] ?? [] as $d) {
+            $driftLines[] = "- {$d['sensor_label']} saat {$d['state_label']}: {$d['direction']} "
+                . round($d['change_percent'], 1) . "% dibanding baseline lama "
+                . "(dari {$d['old_mean']} ke {$d['new_mean']}).";
+        }
+        $driftText = empty($driftLines)
+            ? 'Belum ada tren jangka panjang yang cukup data untuk dianalisa.'
+            : implode("\n", $driftLines);
+
         return <<<PROMPT
         Anda adalah mekanik berpengalaman yang menjelaskan kondisi kendaraan
         ke pemilik awam (bukan mekanik) dalam Bahasa Indonesia yang jelas dan
@@ -117,11 +134,19 @@ class AiMechanicController extends Controller
         dipelajari dari riwayat berkendara mobil ini, BUKAN standar pabrik):
         {$anomalyText}
 
-        Tulis 3-5 kalimat:
+        Tren jangka panjang - baseline mobil ini SENDIRI yang bergeser dari
+        waktu ke waktu (bukan penyimpangan hari ini, tapi "normal"-nya yang
+        berubah pelan, mis. indikasi aki menua atau masalah berkembang):
+        {$driftText}
+
+        Tulis 3-6 kalimat:
         1. Ringkas kondisi kendaraan secara keseluruhan.
         2. Kalau ada DTC/anomali, jelaskan kemungkinan penyebab paling umum
            (bukan pasti - ini indikasi, sampaikan sebagai kemungkinan).
-        3. Sarankan langkah berikutnya yang wajar (pantau, servis rutin, atau
+        3. Kalau ada tren jangka panjang, jelaskan apa artinya (mis. drift
+           voltase turun = kemungkinan aki mulai menua) - ini yang
+           membedakan dari sekadar cek kondisi sesaat.
+        4. Sarankan langkah berikutnya yang wajar (pantau, servis rutin, atau
            segera ke bengkel - sesuaikan urgensi dengan data).
 
         Jangan mengarang kode/istilah yang tidak disebutkan di atas. Kalau
