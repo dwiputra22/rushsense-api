@@ -41,7 +41,7 @@ return [
 
     'ollama' => [
         'url' => env('OLLAMA_URL', 'http://127.0.0.1:11434'),
-        'model' => env('OLLAMA_MODEL', 'qwen2.5:1.5b'),
+        'model' => env('OLLAMA_MODEL', 'qwen2.5:0.5b'),
         // Inferensi di CPU lambat; timeout harus lebih kecil dari receiveTimeout app.
         'timeout' => (int) env('OLLAMA_TIMEOUT', 120),
         'keep_alive' => env('OLLAMA_KEEP_ALIVE', '30m'),
