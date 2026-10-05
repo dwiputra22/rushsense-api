@@ -39,8 +39,14 @@ return [
         'api_key' => env('DEVICE_API_KEY'),
     ],
 
-    'anthropic' => [
-        'api_key' => env('ANTHROPIC_API_KEY'),
+    'ollama' => [
+        'url' => env('OLLAMA_URL', 'http://127.0.0.1:11434'),
+        'model' => env('OLLAMA_MODEL', 'qwen2.5:1.5b'),
+        // Inferensi di CPU lambat; timeout harus lebih kecil dari receiveTimeout app.
+        'timeout' => (int) env('OLLAMA_TIMEOUT', 120),
+        'keep_alive' => env('OLLAMA_KEEP_ALIVE', '30m'),
+        // Opsional: Bearer token kalau Ollama ada di belakang reverse proxy.
+        'api_key' => env('OLLAMA_API_KEY'),
     ],
 
 ];

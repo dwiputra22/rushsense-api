@@ -67,6 +67,7 @@ class VehicleController extends Controller
         $vehicle->delete();
         return response()->noContent();
     }
+
     protected function normalizeYear(Request $request): void
     {
         if ($request->has('year') && in_array($request->input('year'), [0, '0'], true)) {

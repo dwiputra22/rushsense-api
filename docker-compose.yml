@@ -1,0 +1,19 @@
+# Ollama untuk AI Mechanic. Jalankan di server Anda:
+#   docker compose up -d
+#   docker compose exec ollama ollama pull qwen2.5:3b
+# Port hanya di-bind ke localhost: Ollama TIDAK punya autentikasi, jangan buka ke internet.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      OLLAMA_KEEP_ALIVE: 30m
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+
+volumes:
+  ollama:

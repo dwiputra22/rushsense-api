@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AiDiagnosis;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -33,21 +34,37 @@ class AiMechanicController extends Controller
             'drift_signals.*.direction' => 'required_with:drift_signals|string',
         ]);
 
-        $apiKey = config('services.anthropic.api_key');
-        if (!$apiKey) {
+        $timeout = (int) config('services.ollama.timeout', 120);
+        $model = config('services.ollama.model');
+
+        if (!config('services.ollama.url') || !$model) {
             return response()->json([
-                'error' => 'ANTHROPIC_API_KEY belum diset di backend - fitur AI Mechanic '
-                    . 'butuh ini untuk berfungsi.',
+                'error' => 'OLLAMA_URL / OLLAMA_MODEL belum diset di backend - fitur AI Mechanic '
+                    . 'butuh Ollama yang berjalan di server.',
             ], 500);
         }
 
-        $explanation = $this->callAnthropic($apiKey, $data, $vehicle);
+        @set_time_limit($timeout + 15);
+
+        $lock = Cache::lock('ai-mechanic-busy', $timeout + 15);
+        if (!$lock->get()) {
+            return response()->json([
+                'error' => 'AI Mechanic masih memproses permintaan sebelumnya - coba lagi sebentar.',
+            ], 429);
+        }
+
+        try {
+            $explanation = $this->callOllama($data, $vehicle);
+        } finally {
+            $lock->release();
+        }
+
         if ($explanation === null) {
-            return response()->json(['error' => 'Gagal memanggil AI - coba lagi.'], 502);
+            return response()->json(['error' => 'AI di server tidak merespons - coba lagi.'], 502);
         }
 
         $diagnosis = $vehicle->aiDiagnoses()->create([
-            'input_context' => $data,
+            'input_context' => $data + ['_model' => $model],
             'explanation' => $explanation,
         ]);
 
@@ -59,36 +76,46 @@ class AiMechanicController extends Controller
         return $vehicle->aiDiagnoses()->orderByDesc('created_at')->limit(20)->get();
     }
 
-    protected function callAnthropic(string $apiKey, array $context, Vehicle $vehicle): ?string
+    protected function callOllama(array $context, Vehicle $vehicle): ?string
     {
+        $cfg = config('services.ollama');
         $prompt = $this->buildPrompt($context, $vehicle);
 
         try {
-            $response = Http::withHeaders([
-                'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
-                'content-type' => 'application/json',
-            ])->timeout(30)->post('https://api.anthropic.com/v1/messages', [
-                'model' => 'claude-sonnet-4-6',
-                'max_tokens' => 500,
-                'messages' => [[
-                    'role' => 'user',
-                    'content' => $prompt,
-                ]],
+            $request = Http::connectTimeout(5)->timeout((int) $cfg['timeout'])->acceptJson();
+            if (!empty($cfg['api_key'])) {
+                $request = $request->withToken($cfg['api_key']);
+            }
+
+            $response = $request->post(rtrim($cfg['url'], '/') . '/api/chat', [
+                'model' => $cfg['model'],
+                'stream' => false,
+                'keep_alive' => $cfg['keep_alive'],
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => 'Anda asisten mekanik mobil. Jawab HANYA dalam Bahasa Indonesia, '
+                            . 'singkat, tanpa markdown, dan jangan mengarang fakta di luar data yang diberikan.',
+                    ],
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                'options' => [
+                    'temperature' => 0.3,
+                    'num_predict' => 400,
+                    'num_ctx' => 2048,
+                ],
             ]);
 
             if ($response->successful()) {
-                $blocks = $response->json('content', []);
-                foreach ($blocks as $block) {
-                    if (($block['type'] ?? null) === 'text') {
-                        return $block['text'];
-                    }
+                $text = trim((string) $response->json('message.content', ''));
+                if ($text !== '') {
+                    return $text;
                 }
             }
 
-            Log::warning('AI Mechanic call failed: ' . $response->body());
+            Log::warning('AI Mechanic (Ollama) call failed: ' . $response->status() . ' ' . $response->body());
         } catch (\Throwable $e) {
-            Log::warning('AI Mechanic exception: ' . $e->getMessage());
+            Log::warning('AI Mechanic (Ollama) exception: ' . $e->getMessage());
         }
 
         return null;
