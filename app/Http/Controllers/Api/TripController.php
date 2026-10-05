@@ -33,6 +33,10 @@ class TripController extends Controller
             'health_events.*.severity' => 'required_with:health_events|string',
         ]);
 
+        if (isset($data['avg_fuel_consumption_l100km'])) {
+            $data['avg_fuel_consumption_l100km'] = min((float) $data['avg_fuel_consumption_l100km'], 9999.99);
+        }
+
         $trip = $vehicle->trips()->create($data);
 
         return response()->json($trip, 201);

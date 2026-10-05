@@ -15,6 +15,8 @@ class VehicleController extends Controller
 
     public function store(Request $request)
     {
+        $this->normalizeYear($request);
+
         $data = $request->validate([
             'vin' => 'nullable|string|size:17',
             'brand' => 'required|string|max:100',
@@ -44,6 +46,8 @@ class VehicleController extends Controller
 
     public function update(Request $request, Vehicle $vehicle)
     {
+        $this->normalizeYear($request);
+
         $data = $request->validate([
             'vin' => 'nullable|string|size:17|unique:vehicles,vin,' . $vehicle->id,
             'brand' => 'sometimes|string|max:100',
@@ -62,5 +66,11 @@ class VehicleController extends Controller
     {
         $vehicle->delete();
         return response()->noContent();
+    }
+    protected function normalizeYear(Request $request): void
+    {
+        if ($request->has('year') && in_array($request->input('year'), [0, '0'], true)) {
+            $request->merge(['year' => null]);
+        }
     }
 }

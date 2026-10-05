@@ -96,7 +96,10 @@ class AiMechanicController extends Controller
 
     protected function buildPrompt(array $context, Vehicle $vehicle): string
     {
-        $vehicleDesc = "{$vehicle->brand} {$vehicle->model} {$vehicle->year} ({$vehicle->engine_name})";
+        $vehicleDesc = trim(implode(' ', array_filter([$vehicle->brand, $vehicle->model, $vehicle->year])));
+        if (!empty($vehicle->engine_name)) {
+            $vehicleDesc .= " ({$vehicle->engine_name})";
+        }
 
         $dtcList = empty($context['dtc_codes'])
             ? 'Tidak ada kode error aktif.'
